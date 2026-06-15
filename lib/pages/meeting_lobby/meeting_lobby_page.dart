@@ -38,13 +38,10 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 24,
-            vertical: 32,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-
-              const SizedBox(height: 20),
 
               Image.asset(
                 "assets/images/logo.png",
@@ -70,6 +67,33 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
               ),
 
               const SizedBox(height: 50),
+
+              Text(
+                "Persnonal ID",
+                style: AppTextStyles.mediumText,
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: viewmodel.callerIdController,
+                decoration: InputDecoration(
+                  hintText: "Your caller ID",
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
 
               Text(
                 "Meeting ID",

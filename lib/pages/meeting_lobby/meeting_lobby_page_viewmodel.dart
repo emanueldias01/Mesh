@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class MeetingLobbyPageViewmodel extends ChangeNotifier{
   final meetingCodeController = TextEditingController();
+  final callerIdController = TextEditingController();
 
   bool isLoading = false;
 
@@ -15,6 +16,13 @@ class MeetingLobbyPageViewmodel extends ChangeNotifier{
 
     //simula verificacao se sala existe para entrar
     await Future.delayed(const Duration(seconds: 1));
+
+    if(callerIdController.text.isEmpty) {
+      errorMessage = "Your caller ID is empyt";
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
 
     if(meetingCodeController.text == "12345") {
       isLoading = false;
