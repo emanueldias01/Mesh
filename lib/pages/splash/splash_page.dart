@@ -30,7 +30,7 @@ class SplashPage extends StatelessWidget {
               style: AppTextStyles.bigText.copyWith(color: AppColors.textPrimary)
             ),
 
-            SizedBox(height: 250),
+            SizedBox(height: 200),
 
             PrincipalButton(
               text: "Get Started",

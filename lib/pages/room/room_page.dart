@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:provider/provider.dart';
-import 'package:mesh/pages/meeting/room_page_viewmodel.dart';
-import 'package:mesh/pages/meeting/room_page_arguments.dart';
+import 'package:mesh/pages/room/room_page_viewmodel.dart';
+import 'package:mesh/pages/room/room_page_arguments.dart';
 
 class RoomPage extends StatefulWidget {
   const RoomPage({super.key});
@@ -15,16 +15,7 @@ class _RoomPageState extends State<RoomPage> {
   bool _initialized = false;
   bool _chatOpen = false;
 
-  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  final Map<String, RTCVideoRenderer> _remoteRenderers = {};
-
   final TextEditingController _chatController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _localRenderer.initialize();
-  }
 
   @override
   void didChangeDependencies() {
@@ -38,45 +29,14 @@ class _RoomPageState extends State<RoomPage> {
 
   @override
   void dispose() {
-    _localRenderer.dispose();
-    for (final r in _remoteRenderers.values) {
-      r.dispose();
-    }
     _chatController.dispose();
     super.dispose();
-  }
-
-  Future<void> _syncRenderers(RoomPageViewmodel viewmodel) async {
-    if (_localRenderer.srcObject != viewmodel.localStream) {
-      _localRenderer.srcObject = viewmodel.localStream;
-    }
-
-    for (final entry in viewmodel.remoteStreams.entries) {
-      if (!_remoteRenderers.containsKey(entry.key)) {
-        final renderer = RTCVideoRenderer();
-        await renderer.initialize();
-        renderer.srcObject = entry.value;
-        _remoteRenderers[entry.key] = renderer;
-      } else if (_remoteRenderers[entry.key]!.srcObject != entry.value) {
-        _remoteRenderers[entry.key]!.srcObject = entry.value;
-      }
-    }
-
-    final toRemove = _remoteRenderers.keys
-        .where((id) => !viewmodel.remoteStreams.containsKey(id))
-        .toList();
-    for (final id in toRemove) {
-      await _remoteRenderers[id]?.dispose();
-      _remoteRenderers.remove(id);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)!.settings.arguments as RoomPageArguments;
     final viewmodel = context.watch<RoomPageViewmodel>();
-
-    _syncRenderers(viewmodel);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -138,37 +98,37 @@ class _RoomPageState extends State<RoomPage> {
   }
 
   Widget _buildVideoGrid(RoomPageViewmodel viewmodel) {
-    final tiles = <Widget>[
-      _videoTile(
-        renderer: _localRenderer,
+    final tiles = <Widget>[];
+
+    // Local Video
+    if (viewmodel.localStream != null) {
+      tiles.add(StreamVideoTile(
+        key: const ValueKey('local'),
+        stream: viewmodel.localStream!,
         label: "You",
         isMuted: !viewmodel.isAudioEnabled,
         showPlaceholder: !viewmodel.isVideoEnabled,
         mirror: true,
-      ),
-    ];
+      ));
+    }
 
+    // Remote Videos
     for (final entry in viewmodel.remoteStreams.entries) {
-      final renderer = _remoteRenderers[entry.key];
-      if (renderer == null) continue;
-      tiles.add(
-        _videoTile(
-          renderer: renderer,
-          label: entry.key,
-          isMuted: false,
-          showPlaceholder: false,
-          mirror: false,
-        ),
-      );
+      tiles.add(StreamVideoTile(
+        key: ValueKey(entry.key),
+        stream: entry.value,
+        label: entry.key,
+        isMuted: false,
+        showPlaceholder: false,
+        mirror: false,
+      ));
     }
 
     final count = tiles.length;
-    int crossAxisCount;
-    if (count <= 1) {
-      crossAxisCount = 1;
-    } else if (count <= 4) {
+    int crossAxisCount = 1;
+    if (count > 1 && count <= 4) {
       crossAxisCount = 2;
-    } else {
+    } else if (count > 4) {
       crossAxisCount = 3;
     }
 
@@ -183,60 +143,6 @@ class _RoomPageState extends State<RoomPage> {
         ),
         itemCount: count,
         itemBuilder: (context, index) => tiles[index],
-      ),
-    );
-  }
-
-  Widget _videoTile({
-    required RTCVideoRenderer renderer,
-    required String label,
-    required bool isMuted,
-    required bool showPlaceholder,
-    required bool mirror,
-  }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        color: const Color(0xFF1F1F1F),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (!showPlaceholder)
-              RTCVideoView(
-                renderer,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                mirror: mirror,
-              )
-            else
-              const Center(
-                child: Icon(Icons.person, size: 64, color: Colors.white54),
-              ),
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: Row(
-                children: [
-                  if (isMuted)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 4),
-                      child: Icon(Icons.mic_off, size: 16, color: Colors.white),
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      label,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -390,6 +296,118 @@ class _RoomPageState extends State<RoomPage> {
       child: IconButton(
         icon: Icon(icon, color: Colors.white),
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+// NOVO: Widget isolado para controlar o ciclo de vida do renderizador de vídeo
+class StreamVideoTile extends StatefulWidget {
+  final MediaStream stream;
+  final String label;
+  final bool isMuted;
+  final bool showPlaceholder;
+  final bool mirror;
+
+  const StreamVideoTile({
+    super.key,
+    required this.stream,
+    required this.label,
+    required this.isMuted,
+    required this.showPlaceholder,
+    required this.mirror,
+  });
+
+  @override
+  State<StreamVideoTile> createState() => _StreamVideoTileState();
+}
+
+class _StreamVideoTileState extends State<StreamVideoTile> {
+  final RTCVideoRenderer _renderer = RTCVideoRenderer();
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initRenderer();
+  }
+
+  Future<void> _initRenderer() async {
+    await _renderer.initialize();
+    _renderer.srcObject = widget.stream;
+    if (mounted) {
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant StreamVideoTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.stream != widget.stream) {
+      _renderer.srcObject = widget.stream;
+    }
+  }
+
+  @override
+  void dispose() {
+    _renderer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return Container(
+        color: const Color(0xFF1F1F1F),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        color: const Color(0xFF1F1F1F),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (!widget.showPlaceholder)
+              RTCVideoView(
+                _renderer,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                mirror: widget.mirror,
+              )
+            else
+              const Center(
+                child: Icon(Icons.person, size: 64, color: Colors.white54),
+              ),
+            Positioned(
+              left: 8,
+              bottom: 8,
+              child: Row(
+                children: [
+                  if (widget.isMuted)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(Icons.mic_off, size: 16, color: Colors.white),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      widget.label,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

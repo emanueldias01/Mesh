@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mesh/pages/meeting/room_page_arguments.dart';
+import 'package:mesh/pages/room/room_page_arguments.dart';
 import 'package:mesh/pages/meeting_lobby/meeting_lobby_page_viewmodel.dart';
 import 'package:mesh/ui/colors.dart';
 import 'package:mesh/ui/text_styles.dart';

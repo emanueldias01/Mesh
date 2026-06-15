@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:mesh/pages/meeting/room_page.dart';
+import 'package:mesh/pages/room/room_page.dart';
 import 'package:mesh/pages/meeting_lobby/meeting_lobby_page.dart';
 import 'package:mesh/pages/splash/splash_page.dart';
 

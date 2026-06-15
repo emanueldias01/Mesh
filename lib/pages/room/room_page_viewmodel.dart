@@ -89,10 +89,11 @@ class RoomPageViewmodel extends ChangeNotifier {
     try {
       final msg = jsonDecode(data as String) as Map<String, dynamic>;
       final type = msg['type'] as String?;
+      final payload = msg['payload']; 
 
       switch (type) {
         case 'existing-users':
-          final List<dynamic> ids = jsonDecode(msg['payload'] as String);
+          final List<dynamic> ids = payload as List<dynamic>;
           for (final peerId in ids) {
             await _createPeerConnection(peerId as String, isOfferer: true);
           }
@@ -112,21 +113,21 @@ class RoomPageViewmodel extends ChangeNotifier {
 
         case 'chat':
           final from = msg['from'] as String;
-          final payload = jsonDecode(msg['payload'] as String) as Map<String, dynamic>;
-          mensagens.add(ChatMessage(from: from, text: payload['text'] as String));
+          final chatPayload = payload as Map<String, dynamic>;
+          mensagens.add(ChatMessage(from: from, text: chatPayload['text'] as String));
           notifyListeners();
           break;
 
         case 'offer':
-          await _handleOffer(msg);
+          await _handleOffer(msg['from'] as String, payload as Map<String, dynamic>);
           break;
 
         case 'answer':
-          await _handleAnswer(msg);
+          await _handleAnswer(msg['from'] as String, payload as Map<String, dynamic>);
           break;
 
         case 'ice-candidate':
-          await _handleRemoteIceCandidate(msg);
+          await _handleRemoteIceCandidate(msg['from'] as String, payload as Map<String, dynamic>);
           break;
       }
     } catch (e) {
@@ -134,15 +135,16 @@ class RoomPageViewmodel extends ChangeNotifier {
     }
   }
 
-  Future<RTCPeerConnection> _createPeerConnection(String peerId,
-      {required bool isOfferer}) async {
+  Future<RTCPeerConnection> _createPeerConnection(String peerId, {required bool isOfferer}) async {
     final pc = await createPeerConnection(_iceServers);
     _peerConnections[peerId] = pc;
 
+    // CORREÇÃO: Usando addTrack ao invés de addStream
     localStream?.getTracks().forEach((track) {
       pc.addTrack(track, localStream!);
     });
 
+    // CORREÇÃO: Escutando onTrack ao invés de onAddStream
     pc.onTrack = (RTCTrackEvent event) {
       if (event.streams.isNotEmpty) {
         remoteStreams[peerId] = event.streams[0];
@@ -177,10 +179,7 @@ class RoomPageViewmodel extends ChangeNotifier {
     return pc;
   }
 
-  Future<void> _handleOffer(Map<String, dynamic> msg) async {
-    final peerId = msg['from'] as String;
-    final payload = jsonDecode(msg['payload'] as String) as Map<String, dynamic>;
-
+  Future<void> _handleOffer(String peerId, Map<String, dynamic> payload) async {
     final pc = await _createPeerConnection(peerId, isOfferer: false);
 
     await pc.setRemoteDescription(
@@ -196,9 +195,7 @@ class RoomPageViewmodel extends ChangeNotifier {
     });
   }
 
-  Future<void> _handleAnswer(Map<String, dynamic> msg) async {
-    final peerId = msg['from'] as String;
-    final payload = jsonDecode(msg['payload'] as String) as Map<String, dynamic>;
+  Future<void> _handleAnswer(String peerId, Map<String, dynamic> payload) async {
     final pc = _peerConnections[peerId];
     if (pc == null) return;
 
@@ -207,9 +204,7 @@ class RoomPageViewmodel extends ChangeNotifier {
     );
   }
 
-  Future<void> _handleRemoteIceCandidate(Map<String, dynamic> msg) async {
-    final peerId = msg['from'] as String;
-    final payload = jsonDecode(msg['payload'] as String) as Map<String, dynamic>;
+  Future<void> _handleRemoteIceCandidate(String peerId, Map<String, dynamic> payload) async {
     final pc = _peerConnections[peerId];
     if (pc == null) return;
 
@@ -232,18 +227,16 @@ class RoomPageViewmodel extends ChangeNotifier {
     _channel!.sink.add(jsonEncode({
       'type': type,
       'to': to,
-      'payload': jsonEncode(payload),
+      'payload': payload, 
     }));
   }
 
   void enviarMensagem(String texto) {
     if (_channel == null || texto.trim().isEmpty) return;
 
-    final payload = jsonEncode({'text': texto});
-
     _channel!.sink.add(jsonEncode({
       'type': 'chat',
-      'payload': payload,
+      'payload': {'text': texto}, 
     }));
   }
 
