@@ -38,6 +38,24 @@ dependencies:
   web_socket_channel: ^3.0.3
   provider: ^6.1.5+1
   flutter_webrtc: ^1.5.1
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  image_path: "assets/images/icon.png"
+
+  android: true
+  ios: true
+  web:
+    generate: true
+
+  windows:
+    generate: true
+
+  macos:
+    generate: true
+
+  linux:
+    generate: true
 
 dev_dependencies:
   flutter_test:

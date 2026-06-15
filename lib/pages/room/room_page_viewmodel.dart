@@ -45,13 +45,11 @@ class RoomPageViewmodel extends ChangeNotifier with WidgetsBindingObserver {
     if (localStream == null || !isConnected) return;
 
     if (state == AppLifecycleState.paused) {
-      // 1. Tela desligou ou app foi pro segundo plano
       _wasVideoEnabledBeforeBackground = isVideoEnabled;
       if (isVideoEnabled) {
         _setVideoTrackEnabled(false);
       }
     } else if (state == AppLifecycleState.resumed) {
-      // 2. O usuário desbloqueou o celular e voltou pro app
       if (_wasVideoEnabledBeforeBackground) {
         _setVideoTrackEnabled(true);
       }
