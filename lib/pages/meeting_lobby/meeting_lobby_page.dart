@@ -154,7 +154,19 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
               const SizedBox(height: 30),
 
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () async {
+                  final createRoom = await viewmodel.createMeeting();
+                  if(createRoom){
+                    Navigator.pushNamed(context, "/room", arguments: RoomPageArguments(roomId: "54321"));
+                  }else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text(
+                        "Failed to create room"
+                      ))
+                    );
+                  }
+                  
+                },
                 icon: const Icon(Icons.video_call),
                 label: const Text("Create Meeting"),
                 style: OutlinedButton.styleFrom(

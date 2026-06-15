@@ -13,6 +13,7 @@ class MeetingLobbyPageViewmodel extends ChangeNotifier{
     isLoading = true;
     notifyListeners();
 
+    //simula verificacao se sala existe para entrar
     await Future.delayed(const Duration(seconds: 1));
 
     if(meetingCodeController.text == "12345") {
@@ -29,5 +30,17 @@ class MeetingLobbyPageViewmodel extends ChangeNotifier{
       return false;
     }
 
+  }
+
+  Future<bool> createMeeting() async {
+    isLoading = true;
+    notifyListeners();
+
+    //simula criação de sala 
+    await Future.delayed(const Duration(seconds: 1));
+
+    isLoading = false;
+    notifyListeners();
+    return true;
   }
 }
