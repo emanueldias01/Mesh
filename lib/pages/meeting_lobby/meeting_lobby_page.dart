@@ -3,7 +3,9 @@ import 'package:mesh/pages/room/room_page_arguments.dart';
 import 'package:mesh/pages/meeting_lobby/meeting_lobby_page_viewmodel.dart';
 import 'package:mesh/ui/colors.dart';
 import 'package:mesh/ui/text_styles.dart';
+import 'package:mesh/widgets/address.dart';
 import 'package:mesh/widgets/principal_button.dart';
+import 'package:mesh/widgets/secondary_button.dart';
 
 class MeetingLobbyPage extends StatefulWidget {
   const MeetingLobbyPage({super.key});
@@ -20,11 +22,11 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
   void initState() {
     super.initState();
     viewmodel.addListener(() {
-      setState(() {
-        
-      });
+      setState(() {});
     });
+
   }
+  
   @override
   void dispose() {
     viewmodel.dispose();
@@ -34,6 +36,39 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
+      drawer: Drawer(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (viewmodel.addressSignalServer.text.isNotEmpty)
+                          Address(address: viewmodel.addressSignalServer.text)
+                        else
+                          Text(
+                            "Add Server signal address",
+                            style: AppTextStyles.mediumText.copyWith(fontSize: 16)
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: SecondaryButton(text: "Add Address", icon: Icons.add, onTap: () {}),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -199,44 +234,29 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
 
                       const SizedBox(height: 24),
 
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final createRoom = await viewmodel.createRoom();
+                      SecondaryButton(
+                        text: "Create Room",
+                        icon: Icons.video_call,
+                        onTap: () async {
+                          final createRoom = await viewmodel.createRoom();
 
-                            if (createRoom) {
-                              Navigator.pushNamed(
-                                context,
-                                "/room",
-                                arguments: RoomPageArguments(
-                                  roomId:
-                                      viewmodel.roomCodeController.text,
-                                  userId:
-                                      viewmodel.callerIdController.text,
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Failed to create room",
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.video_call),
-                          label: const Text("Create Room"),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
+                          if (createRoom) {
+                            Navigator.pushNamed(
+                              context,
+                              "/room",
+                              arguments: RoomPageArguments(
+                                roomId: viewmodel.roomCodeController.text,
+                                userId: viewmodel.callerIdController.text,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Failed to create room"),
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

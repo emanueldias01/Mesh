@@ -8,6 +8,7 @@ import 'package:mesh/constants/env.dart';
 class MeetingLobbyPageViewmodel extends ChangeNotifier{
   final roomCodeController = TextEditingController();
   final callerIdController = TextEditingController();
+  final addressSignalServer = TextEditingController();
 
   bool isLoading = false;
 

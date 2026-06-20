@@ -9,7 +9,6 @@ Mesh is a real-time video meeting platform built with Flutter, WebRTC, and Go. I
 - Real-time audio and video communication
 - Cross-platform support
 - WebRTC peer-to-peer connections
-- Modern Flutter UI
 
 ## Supported Platforms
 
@@ -26,18 +25,6 @@ Before running the application, make sure you have:
 - Flutter SDK installed
 - A configured `env.json` file
 - A running Mesh backend/signaling server
-
-## Environment Configuration
-
-Create an `env.json` file in the project root:
-
-```json
-{
-  "API_URL": "http://localhost:8080"
-}
-```
-
-Adjust the values according to your backend configuration.
 
 ## Running the Application
 
