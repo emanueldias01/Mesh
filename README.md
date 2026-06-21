@@ -16,7 +16,7 @@ Mesh is a real-time video meeting platform built with Flutter, WebRTC, and Go. I
 ## Requirements
 Before running the application, make sure you have:
 - Flutter SDK installed
-- A running Mesh backend/signaling server
+- A running <a href="https://github.com/emanueldias01/mesh-backend">Mesh backend/signaling server</a> in server host
 ## Running the Application
 ### Development
 ```bash
