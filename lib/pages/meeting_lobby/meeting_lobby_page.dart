@@ -14,6 +14,54 @@ class MeetingLobbyPage extends StatefulWidget {
   State<MeetingLobbyPage> createState() => _MeetingLobbyPageState();
 }
 
+void _showAddAddressModal(BuildContext context, MeetingLobbyPageViewmodel viewmodel) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          left: 24,
+          right: 24,
+          top: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "Add Signal Server Address",
+              style: AppTextStyles.mediumText.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: viewmodel.signalServerAddressController,
+              decoration: const InputDecoration(
+                hintText: "e.g., https://signal.example.com",
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                viewmodel.addServerAddress(); 
+                
+                Navigator.pop(context); 
+              },
+              child: const Text("Confirm"),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
 
   final viewmodel = MeetingLobbyPageViewmodel();
@@ -48,8 +96,19 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (viewmodel.addressSignalServer.text.isNotEmpty)
-                          Address(address: viewmodel.addressSignalServer.text)
+                        if (viewmodel.signalServers.isNotEmpty)
+                          ...viewmodel.signalServers.map((server) {
+                          return Padding(
+                            padding: EdgeInsetsGeometry.all(3),
+                            child: Address(
+                              address: server, 
+                              isSelect: viewmodel.serverAddressSelect == server ? true :  false,
+                              onTap: () {
+                                viewmodel.selectSignalServer(viewmodel.signalServers.indexOf(server));
+                              }
+                              ),
+                          );
+                        })
                         else
                           Text(
                             "Add Server signal address",
@@ -62,7 +121,10 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
                 
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),
-                  child: SecondaryButton(text: "Add Address", icon: Icons.add, onTap: () {}),
+                  child: SecondaryButton(text: "Add Address", icon: Icons.add, onTap: () {
+
+                    _showAddAddressModal(context, viewmodel);
+                  }),
                 ),
               ],
             ),
@@ -176,6 +238,7 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
                                 context,
                                 "/room",
                                 arguments: RoomPageArguments(
+                                  serverAddress: viewmodel.serverAddressSelect,
                                   roomId:
                                       viewmodel.roomCodeController.text,
                                   userId:
@@ -245,6 +308,7 @@ class _MeetingLobbyPageState extends State<MeetingLobbyPage> {
                               context,
                               "/room",
                               arguments: RoomPageArguments(
+                                serverAddress: viewmodel.serverAddressSelect,
                                 roomId: viewmodel.roomCodeController.text,
                                 userId: viewmodel.callerIdController.text,
                               ),

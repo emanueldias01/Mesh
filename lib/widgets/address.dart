@@ -5,11 +5,12 @@ import 'package:mesh/ui/text_styles.dart';
 class Address extends StatelessWidget {
   final String address;
   final VoidCallback? onTap;
+  final bool isSelect;
 
   const Address({
     super.key, 
     required this.address,
-    this.onTap,
+    this.onTap, required this.isSelect,
   });
 
   @override
@@ -59,8 +60,8 @@ class Address extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
+              Icon(
+                isSelect ? Icons.check : Icons.chevron_right,
                 color: Colors.grey,
               ),
             ],

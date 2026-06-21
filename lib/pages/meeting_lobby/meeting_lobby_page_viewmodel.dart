@@ -3,16 +3,41 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:mesh/constants/env.dart';
 
 class MeetingLobbyPageViewmodel extends ChangeNotifier{
   final roomCodeController = TextEditingController();
   final callerIdController = TextEditingController();
-  final addressSignalServer = TextEditingController();
+  final signalServerAddressController = TextEditingController();
+
+  final List<String> signalServers = [];
+
+  String serverAddressSelect = "";
+
 
   bool isLoading = false;
 
   String errorMessage = "";
+
+  void addServerAddress() {
+    final address = signalServerAddressController.text;
+    if(address.isNotEmpty) {
+      signalServers.add(address);
+    }
+    signalServerAddressController.text = "";
+    notifyListeners();
+  }
+
+  void removeAddress(int index) {
+    if (index >= 0 && index < signalServers.length) {
+      signalServers.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void selectSignalServer(int index) {
+    serverAddressSelect = signalServers[index];
+    notifyListeners();
+  }
 
 
   Future<bool> joinRoom() async {
@@ -28,7 +53,7 @@ class MeetingLobbyPageViewmodel extends ChangeNotifier{
   }
 
   try {
-    final url = Uri.parse('${Env.apiUrl}/rooms/${roomCodeController.text}');
+    final url = Uri.parse('$serverAddressSelect/rooms/${roomCodeController.text}');
     
     final response = await http.get(url).timeout(const Duration(seconds: 10));
 
@@ -73,7 +98,7 @@ class MeetingLobbyPageViewmodel extends ChangeNotifier{
     }
     
     try {
-      final url = Uri.parse('${Env.apiUrl}/rooms');
+      final url = Uri.parse('$serverAddressSelect/rooms');
 
       final response = await http.post(url).timeout(const Duration(seconds: 10));
       if (response.statusCode == 201 || response.statusCode == 200) {
