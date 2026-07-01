@@ -17,27 +17,27 @@ class _RoomPageState extends State<RoomPage> {
 
   final TextEditingController _chatController = TextEditingController();
 
- @override
-void didChangeDependencies() {
-  super.didChangeDependencies();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-  if (!_initialized) {
-    _initialized = true;
+    if (!_initialized) {
+      _initialized = true;
 
-    final args =
-        ModalRoute.of(context)!.settings.arguments as RoomPageArguments;
+      final args =
+          ModalRoute.of(context)!.settings.arguments as RoomPageArguments;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
 
-      context.read<RoomPageViewmodel>().connectRoom(
-        args.serverAddress,
-        args.roomId,
-        args.userId,
-      );
-    });
+        context.read<RoomPageViewmodel>().connectRoom(
+          args.serverAddress,
+          args.roomId,
+          args.userId,
+        );
+      });
+    }
   }
-}
 
   @override
   void dispose() {
@@ -110,12 +110,9 @@ void didChangeDependencies() {
   }
 
   Widget _buildVideoGrid(RoomPageViewmodel viewmodel) {
-  debugPrint(
-    'REMOTE STREAMS UI => ${viewmodel.remoteStreams.length}',
-  );
+    debugPrint('REMOTE STREAMS UI => ${viewmodel.remoteStreams.length}');
     final tiles = <Widget>[];
 
-    // Local Video
     if (viewmodel.localStream != null) {
       tiles.add(StreamVideoTile(
         key: const ValueKey('local'),
@@ -127,7 +124,6 @@ void didChangeDependencies() {
       ));
     }
 
-    // Remote Videos
     for (final entry in viewmodel.remoteStreams.entries) {
       debugPrint("CRIANDO TILE REMOTO => ${entry.key}");
 
@@ -142,25 +138,54 @@ void didChangeDependencies() {
     }
 
     final count = tiles.length;
-    int crossAxisCount = 1;
-    if (count > 1 && count <= 4) {
-      crossAxisCount = 2;
-    } else if (count > 4) {
-      crossAxisCount = 3;
-    }
+    if (count == 0) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.all(4.0),
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: 4 / 3,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-        ),
-        itemCount: count,
-        itemBuilder: (context, index) => tiles[index],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isPortrait = constraints.maxHeight > constraints.maxWidth;
+        int columns = 1;
+
+        if (count == 1) {
+          columns = 1;
+        } else if (count == 2) {
+          columns = isPortrait ? 1 : 2;
+        } else if (count <= 4) {
+          columns = 2;
+        } else if (count <= 6) {
+          columns = isPortrait ? 2 : 3;
+        } else if (count <= 9) {
+          columns = isPortrait ? 2 : 3;
+        } else {
+          columns = isPortrait ? 3 : 4;
+        }
+
+        int rows = (count / columns).ceil();
+
+        const double padding = 8.0;
+        const double spacing = 4.0;
+
+        double availableWidth = constraints.maxWidth - padding - (spacing * (columns - 1));
+        double availableHeight = constraints.maxHeight - padding - (spacing * (rows - 1));
+
+        double itemWidth = availableWidth / columns;
+        double itemHeight = availableHeight / rows;
+        double childAspectRatio = itemWidth / itemHeight;
+
+        return Padding(
+          padding: const EdgeInsets.all(padding / 2),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              childAspectRatio: childAspectRatio.isFinite && childAspectRatio > 0 ? childAspectRatio : 1.0,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+            ),
+            itemCount: count,
+            itemBuilder: (context, index) => tiles[index],
+          ),
+        );
+      },
     );
   }
 
@@ -269,36 +294,38 @@ void didChangeDependencies() {
   }
 
   Widget _buildControlBar(RoomPageViewmodel viewmodel) {
-    return SafeArea(child: Container(
-      color: const Color(0xFF202124),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _controlButton(
-            icon: viewmodel.isAudioEnabled ? Icons.mic : Icons.mic_off,
-            active: viewmodel.isAudioEnabled,
-            onPressed: () => viewmodel.toggleAudio(),
-          ),
-          const SizedBox(width: 16),
-          _controlButton(
-            icon: viewmodel.isVideoEnabled ? Icons.videocam : Icons.videocam_off,
-            active: viewmodel.isVideoEnabled,
-            onPressed: () => viewmodel.toggleVideo(),
-          ),
-          const SizedBox(width: 16),
-          _controlButton(
-            icon: Icons.call_end,
-            active: false,
-            color: Colors.red,
-            onPressed: () {
-              viewmodel.disconnectFromRoom();
-              Navigator.pop(context);
-            },
-          ),
-        ],
+    return SafeArea(
+      child: Container(
+        color: const Color(0xFF202124),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _controlButton(
+              icon: viewmodel.isAudioEnabled ? Icons.mic : Icons.mic_off,
+              active: viewmodel.isAudioEnabled,
+              onPressed: () => viewmodel.toggleAudio(),
+            ),
+            const SizedBox(width: 16),
+            _controlButton(
+              icon: viewmodel.isVideoEnabled ? Icons.videocam : Icons.videocam_off,
+              active: viewmodel.isVideoEnabled,
+              onPressed: () => viewmodel.toggleVideo(),
+            ),
+            const SizedBox(width: 16),
+            _controlButton(
+              icon: Icons.call_end,
+              active: false,
+              color: Colors.red,
+              onPressed: () {
+                viewmodel.disconnectFromRoom();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _controlButton({
